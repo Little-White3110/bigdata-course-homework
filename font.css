@@ -1,0 +1,26 @@
+/* 得意黑字体引入 */
+@font-face {
+    font-family: 'Smiley Sans'; /* This is the family name applications will use */
+    /* The src descriptor points to the font file. Add version for stability. */
+    /* DEVTOOL LOG FIX: Updated src to use available .ttf format as .woff/.woff2 were 404. */
+    src: url('https://cdn.jsdelivr.net/npm/smiley-sans@1.0.0/dist/SmileySans-Oblique.ttf') format('truetype');
+         /* WOFF2 and WOFF are preferred for web, but were not found at the previous CDN links for this version.
+            Example of how they would be listed if available:
+            url('...') format('woff2'), 
+            url('...') format('woff'); 
+         */
+    font-weight: normal; 
+    font-style: oblique; /* This font file IS oblique. Declaring it correctly helps the browser. */
+    font-display: swap; /* Use fallback font while loading, then swap. */
+}
+
+/*
+  If a bold version of 'Smiley Sans' is needed, and no specific bold font file
+  is provided via another @font-face rule, the browser may apply
+  algorithmic (faux) bolding to this oblique font when `font-weight: bold` is used.
+*/
+
+/* 字体加载优化 */
+.font-smiley {
+    font-family: 'Smiley Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}

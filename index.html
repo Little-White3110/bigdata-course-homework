@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>埃博拉疫情数据可视化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/map/js/world.js"></script> <!-- MOVED here for earlier loading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.7/marked.min.js"></script>
+    <link rel="stylesheet" href="font.css">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'smiley': ['Smiley Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- 顶栏 -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transform transition-all duration-500 ease-in-out opacity-0 -translate-y-full">
+        <div class="backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- 标题（顶栏中） -->
+                    <h1 id="navbar-title" class="text-xl font-bold font-smiley text-gray-900 dark:text-white transform transition-all duration-500 opacity-0">
+                        埃博拉疫情数据可视化
+                    </h1>
+                    
+                    <!-- 暗色模式切换按钮 -->
+                    <button id="theme-toggle" aria-label="Toggle dark mode" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                        <svg id="theme-icon" class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                            <!-- Heroicons solid sun (20x20), UPDATED path -->
+                            <path class="sun-icon" fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v.5a.75.75 0 01-1.5 0v-.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v.5a.75.75 0 01-1.5 0v-.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-.354.353a.75.75 0 001.061 1.061l.353-.354zM5.404 15.657a.75.75 0 10-1.06-1.06l-.354.353a.75.75 0 001.061 1.061l.353-.354zM2.75 10a.75.75 0 01-.75.75H2a.75.75 0 010-1.5h.5A.75.75 0 012.75 10zM17.25 10a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5a.75.75 0 01.75.75zM6.113 14.596a.75.75 0 101.06-1.06l-.353-.354a.75.75 0 00-1.061 1.061l.354.353zM14.596 6.113a.75.75 0 101.06-1.06l-.353-.354a.75.75 0 00-1.061 1.061l.354.353zM4.343 4.343a.75.75 0 101.06 1.06l.354-.353A.75.75 0 004.343 4.343zM14.95 14.95a.75.75 0 101.06 1.06l.353-.354a.75.75 0 10-1.06-1.06l-.353.354z" clip-rule="evenodd" />
+                            <!-- Heroicons solid moon (20x20), path was OK -->
+                            <path class="moon-icon hidden" fill-rule="evenodd" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="relative">
+        <!-- 标题区域（页面顶部） -->
+        <section class="hero-section h-screen flex items-center justify-center relative">
+            <div class="text-center">
+                <h1 id="main-title" class="text-4xl md:text-6xl lg:text-7xl font-bold font-smiley text-gray-900 dark:text-white mb-4 transform transition-all duration-700">
+                    埃博拉疫情数据可视化
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-4 font-smiley">
+                    基于2015年西非埃博拉疫情数据的可视化分析平台
+                </p>
+                <div class="mt-8">
+                    <div class="animate-bounce cursor-pointer" role="button" aria-label="Scroll down">
+                        <svg class="w-14 h-14 text-gray-400 mx-auto cursor-pointer hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" onclick="handleScrollDown()">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 图表容器区域 -->
+        <section class="charts-section py-16 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- 图表1：三国累计病例趋势折线图 -->
+                    <div class="chart-container bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold font-smiley text-gray-900 dark:text-white mb-4">
+                            三国累计病例趋势
+                        </h3>
+                        <div id="chart1-container" class="h-80 w-full rounded-lg">
+                            <!-- Echarts will render here -->
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 font-smiley">
+                            展示几内亚、利比里亚、塞拉利昂累计病例发展趋势
+                        </p>
+                    </div>
+
+                    <!-- 图表2：病例类型分布雷达图 -->
+                    <div class="chart-container bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold font-smiley text-gray-900 dark:text-white mb-4">
+                            病例类型分布
+                        </h3>
+                        <div id="chart2-container" class="h-80 w-full rounded-lg">
+                            <!-- Echarts will render here for chart 2 -->
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 font-smiley">
+                            对比确诊、疑似、可能病例的分布情况
+                        </p>
+                    </div>
+
+                    <!-- 图表3：死亡率热力图 -->
+                    <div class="chart-container bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold font-smiley text-gray-900 dark:text-white mb-4">
+                            死亡率热力图
+                        </h3>
+                        <div id="chart3-container" class="h-[500px] w-full rounded-lg">
+                            <!-- Echarts will render here for chart 3 -->
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 font-smiley">
+                            三国埃博拉死亡率对比 (截至2015-03-10)
+                        </p>
+                    </div>
+
+                    <!-- 图表4：新增病例滚动柱状图 -->
+                    <div class="chart-container bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold font-smiley text-gray-900 dark:text-white mb-4">
+                            21天新增病例数
+                        </h3>
+                        <div id="chart4-container" class="h-80 w-full rounded-lg">
+                            <!-- Echarts will render here for chart 4 -->
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 font-smiley">
+                            三国在2015-02-05至2015-02-25期间新增病例总数
+                        </p>
+                    </div>
+
+                    <!-- 图表5：输入型病例环形图 -->
+                    <div class="chart-container bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold font-smiley text-gray-900 dark:text-white mb-4">
+                            输入型病例分布
+                        </h3>
+                        <div id="chart5-container" class="h-80 w-full rounded-lg">
+                            <!-- Echarts will render here for chart 5 -->
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 font-smiley">
+                            非疫区国家输入病例统计
+                        </p>
+                    </div>
+
+                    <!-- 图表6：治愈率/死亡率对比条形图 -->
+                    <div class="chart-container bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold font-smiley text-gray-900 dark:text-white mb-4">
+                            治愈率与死亡率对比
+                        </h3>
+                        <div id="chart6-container" class="h-80 w-full rounded-lg">
+                            <!-- Echarts will render here for chart 6 -->
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 font-smiley">
+                            各国治疗效果对比分析
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底栏 -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center">
+                <p class="text-gray-600 dark:text-gray-400 font-smiley">
+                   埃博拉疫情数据可视化网站 | 基于2015年西非疫情数据
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2 font-smiley">
+                    数据来源 <a href="https://data.humdata.org/dataset/ebola-cases-2014" target="_blank" rel="noopener noreferrer">世界卫生组织 WHO（点击跳转）</a> | 使用 Echarts制作
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2 font-smiley">
+                    根据埃博拉数据和统计，几内亚、利比里亚、塞拉利昂、尼日利亚、塞内加尔、马里、西班牙、美国、英国和意大利的可能、确诊和疑似埃博拉病例和死亡总数。
+                    资源包含对利比里亚的两次引用：Liberia 和 Liberia 2。利比里亚包含 2015 年 5 月 9 日之前报告的。利比里亚 2 是指 2015 年 5 月 9 日之后报告的病例。
+                    资源包含对几内亚的两个引用：几内亚和几内亚 2。含 2015 年 5 月 9 日之前报告的几内亚。几内亚 2 是指 2016 年 3 月 23 日之后报告的病例。
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Chart scripts are loaded after their containers are defined and ECharts library is loaded -->
+    <script src="charts/chart1.js"></script>
+    <script src="charts/chart2.js"></script>
+    <script src="charts/chart3.js"></script>
+    <script src="charts/chart4.js"></script>
+    <script src="charts/chart5.js"></script> 
+    <script src="charts/chart6.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
